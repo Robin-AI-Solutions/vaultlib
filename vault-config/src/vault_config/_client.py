@@ -59,7 +59,7 @@ def _login(addr: str) -> str:
         urllib.request.Request(
             f"{addr}/v1/auth/kubernetes/login",
             data=json.dumps(
-                {"role": _pointer("VAULT_ROLE"), "jwt": _sa_file("token")}
+                {"role": _pointer("VAULT_ROLE", "vault-reader"), "jwt": _sa_file("token")}
             ).encode(),
             headers={"Content-Type": "application/json"},
             method="POST",

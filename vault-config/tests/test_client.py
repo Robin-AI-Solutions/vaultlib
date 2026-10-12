@@ -39,6 +39,15 @@ LOGIN = {"auth": {"client_token": "t"}}
 DATA = {"data": {"data": {"DB_HOST": "db", "DEBUG": "false", "PORT": 8080}}}
 
 
+def test_rol_por_defecto_es_vault_reader(env, monkeypatch):
+    monkeypatch.delenv("VAULT_ROLE", raising=False)
+    vault_config.reload()
+    with _serve(LOGIN, DATA) as m:
+        assert vault_config.get("DB_HOST") == "db"
+    body = json.loads(m.call_args_list[0].args[0].data)
+    assert body["role"] == "vault-reader"
+
+
 def test_un_login_y_una_lectura(env):
     with _serve(LOGIN, DATA) as m:
         for _ in range(100):
