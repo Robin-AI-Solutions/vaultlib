@@ -6,16 +6,16 @@ Solo biblioteca estándar. Python 3.10+.
 
 ## Instalación
 
-El paquete se publica como `robin-ai-solutions-vault-config` desde [Robin-AI-Solutions/vaultlib](https://github.com/Robin-AI-Solutions/vaultlib), en el subdirectorio `vault-config`. Fija el tag:
+El paquete se publica como `robin-ai-solutions-vault-config` desde [Robin-AI-Solutions/vaultlib](https://github.com/Robin-AI-Solutions/vaultlib), en el subdirectorio `vault-config`. La instalación siempre toma la rama `main`:
 
 ```
-pip install "git+https://github.com/Robin-AI-Solutions/vaultlib@v0.1.0#subdirectory=vault-config"
+pip install "git+https://github.com/Robin-AI-Solutions/vaultlib@main#subdirectory=vault-config"
 ```
 
 En `requirements.txt`:
 
 ```
-robin-ai-solutions-vault-config @ git+https://github.com/Robin-AI-Solutions/vaultlib@v0.1.0#subdirectory=vault-config
+robin-ai-solutions-vault-config @ git+https://github.com/Robin-AI-Solutions/vaultlib@main#subdirectory=vault-config
 ```
 
 ## Uso
@@ -42,7 +42,6 @@ Si falta un puntero o una clave, se lanza `VaultConfigError`. El mensaje nombra 
 | Variable | Obligatoria | Por defecto |
 |----------|-------------|-------------|
 | `VAULT_ADDR` | Sí | — |
-| `VAULT_ROLE` | No | `vault-reader` |
 | `VAULT_SECRET_NAME` | Sí, salvo que se pase `secret_name` | — |
 | `VAULT_KV_MOUNT` | No | `secret` |
 | `VAULT_AUTH_TOKEN_PATH` | No | `/var/run/secrets/kubernetes.io/serviceaccount` |
