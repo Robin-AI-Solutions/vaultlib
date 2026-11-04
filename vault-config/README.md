@@ -43,12 +43,27 @@ Si falta un puntero o una clave sin `default`, se lanza `VaultConfigError`. El m
 
 | Variable | Obligatoria | Por defecto |
 |----------|-------------|-------------|
-| `VAULT_ADDR` | Sí | — |
-| `VAULT_SECRET_NAME` | Sí, salvo que se pase `secret_name` | — |
+| `VAULT_ADDR` | Sí, salvo con `VAULT_LOCAL_FILE` | — |
+| `VAULT_SECRET_NAME` | Sí, salvo que se pase `secret_name` o se use `VAULT_LOCAL_FILE` | — |
 | `VAULT_KV_MOUNT` | No | `secret` |
 | `VAULT_AUTH_TOKEN_PATH` | No | `/var/run/secrets/kubernetes.io/serviceaccount` |
+| `VAULT_LOCAL_FILE` | No | — |
 
 La librería hace login con el JWT del service account y lee KV v2 en `{mount}/data/{namespace}/{secret_name}`. Hay un login y una lectura por secreto durante la vida del proceso. Si Vault responde 403, hace login de nuevo y reintenta una vez. Cada llamada tiene un timeout de 5 segundos. No hay respaldo a otras variables de entorno: una clave ausente falla, salvo que la llamada pase `default`.
+
+## Local, sin cluster
+
+`VAULT_LOCAL_FILE` apunta a un JSON con las mismas claves del secreto. La aplicación no cambia: `get_int("PORT")` sigue igual y no hay login ni red.
+
+```json
+{"PORT": "8080", "WORKERS": "4"}
+```
+
+```
+VAULT_LOCAL_FILE=./vault.local.json python main.py
+```
+
+En el cluster esa variable no se define. Si el secreto real no trae `PORT` o `WORKERS`, hay que agregarlas en Vault o pasar `default` en la llamada.
 
 ## Pruebas
 

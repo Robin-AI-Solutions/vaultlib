@@ -100,6 +100,28 @@ def test_default_si_falta_la_clave():
         assert vault_config.get_bool("DEBUG", default=False) is False
 
 
+def test_archivo_local_sin_vault(tmp_path, monkeypatch):
+    path = tmp_path / "local.json"
+    path.write_text(json.dumps({"PORT": "8080", "WORKERS": 4}))
+    monkeypatch.setenv("VAULT_LOCAL_FILE", str(path))
+    monkeypatch.delenv("VAULT_ADDR", raising=False)
+    vault_config.reload()
+    assert vault_config.get_int("PORT") == 8080
+    assert vault_config.get_int("WORKERS") == 4
+    vault_config.reload()
+
+
+def test_archivo_local_no_expone_contenido(tmp_path, monkeypatch):
+    path = tmp_path / "local.json"
+    path.write_text("{no es json, PORT: valor-secreto}")
+    monkeypatch.setenv("VAULT_LOCAL_FILE", str(path))
+    vault_config.reload()
+    with pytest.raises(vault_config.VaultConfigError) as err:
+        vault_config.get("PORT")
+    assert "valor-secreto" not in str(err.value)
+    vault_config.reload()
+
+
 def test_default_no_aparece_en_el_error():
     with fake({}):
         with pytest.raises(vault_config.VaultConfigError) as err:

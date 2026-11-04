@@ -19,6 +19,7 @@ _cache: dict[str, dict[str, Any]] = {}
 _token: str | None = None
 _override: dict[str, Any] | None = None
 _MISSING: Any = object()
+_LOCAL_KEY = ""
 
 
 class VaultConfigError(RuntimeError):
@@ -99,10 +100,27 @@ def _fetch(secret_name: str) -> dict[str, Any]:
     return data
 
 
+def _read_local(path: str) -> dict[str, Any]:
+    try:
+        raw = json.loads(Path(path).read_text(encoding="utf-8"))
+    except OSError:
+        raise VaultConfigError(f"No se pudo leer {path}") from None
+    except json.JSONDecodeError:
+        raise VaultConfigError(f"El archivo {path} no es JSON válido") from None
+    if not isinstance(raw, dict):
+        raise VaultConfigError(f"El archivo {path} no es un objeto JSON")
+    return raw
+
+
 def _secret(secret_name: str | None) -> dict[str, Any]:
     with _lock:
         if _override is not None:
             return _override
+        local = os.environ.get("VAULT_LOCAL_FILE")
+        if local:
+            if _LOCAL_KEY not in _cache:
+                _cache[_LOCAL_KEY] = _read_local(local)
+            return _cache[_LOCAL_KEY]
         name = (secret_name or _pointer("VAULT_SECRET_NAME")).strip("/")
         if name not in _cache:
             _cache[name] = _fetch(name)
