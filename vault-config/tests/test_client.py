@@ -90,3 +90,18 @@ def test_error_no_expone_valores():
 def test_fake_sin_red():
     with fake({"PORT": "8080"}):
         assert vault_config.get_int("PORT") == 8080
+
+
+def test_default_si_falta_la_clave():
+    with fake({"PORT": "9090"}):
+        assert vault_config.get_int("PORT", default=8080) == 9090
+        assert vault_config.get_int("WORKERS", default=4) == 4
+        assert vault_config.get("NAME", default="app") == "app"
+        assert vault_config.get_bool("DEBUG", default=False) is False
+
+
+def test_default_no_aparece_en_el_error():
+    with fake({}):
+        with pytest.raises(vault_config.VaultConfigError) as err:
+            vault_config.get_int("WORKERS", default="no-es-entero")
+        assert "no-es-entero" not in str(err.value)

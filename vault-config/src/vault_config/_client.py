@@ -18,6 +18,7 @@ _lock = threading.Lock()
 _cache: dict[str, dict[str, Any]] = {}
 _token: str | None = None
 _override: dict[str, Any] | None = None
+_MISSING: Any = object()
 
 
 class VaultConfigError(RuntimeError):
@@ -108,17 +109,33 @@ def _secret(secret_name: str | None) -> dict[str, Any]:
         return _cache[name]
 
 
-def get(key: str, secret_name: str | None = None) -> str:
-    """Devuelve un campo del secreto. Sin secret_name usa VAULT_SECRET_NAME."""
-    data = _secret(secret_name)
-    if key not in data:
-        raise VaultConfigError(f"Falta la clave {key!r} en el secreto")
-    value = data[key]
+def _text(value: Any) -> str:
     return value if isinstance(value, str) else str(value)
 
 
-def get_bool(key: str, secret_name: str | None = None) -> bool:
-    raw = get(key, secret_name).strip().lower()
+def get(key: str, secret_name: str | None = None, *, default: Any = _MISSING) -> str:
+    """Devuelve un campo del secreto. Sin secret_name usa VAULT_SECRET_NAME.
+
+    Si la clave no está y se pasa default, devuelve ese valor. Si está, gana Vault.
+    """
+    data = _secret(secret_name)
+    if key not in data:
+        if default is _MISSING:
+            raise VaultConfigError(f"Falta la clave {key!r} en el secreto")
+        return _text(default)
+    return _text(data[key])
+
+
+def get_bool(key: str, secret_name: str | None = None, *, default: Any = _MISSING) -> bool:
+    data = _secret(secret_name)
+    if key not in data:
+        if default is _MISSING:
+            raise VaultConfigError(f"Falta la clave {key!r} en el secreto")
+        if isinstance(default, bool):
+            return default
+        raw = _text(default).strip().lower()
+    else:
+        raw = _text(data[key]).strip().lower()
     if raw in _TRUE:
         return True
     if raw in _FALSE:
@@ -126,9 +143,18 @@ def get_bool(key: str, secret_name: str | None = None) -> bool:
     raise VaultConfigError(f"La clave {key!r} no es un booleano válido")
 
 
-def get_int(key: str, secret_name: str | None = None) -> int:
+def get_int(key: str, secret_name: str | None = None, *, default: Any = _MISSING) -> int:
+    data = _secret(secret_name)
+    if key not in data:
+        if default is _MISSING:
+            raise VaultConfigError(f"Falta la clave {key!r} en el secreto")
+        if isinstance(default, int) and not isinstance(default, bool):
+            return default
+        raw = _text(default).strip()
+    else:
+        raw = _text(data[key]).strip()
     try:
-        return int(get(key, secret_name).strip())
+        return int(raw)
     except ValueError:
         raise VaultConfigError(f"La clave {key!r} no es un entero válido") from None
 

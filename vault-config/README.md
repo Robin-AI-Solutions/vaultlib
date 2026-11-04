@@ -25,15 +25,17 @@ from vault_config import get, get_bool, get_int
 
 DB_HOST = get("DB_HOST")
 DEBUG = get_bool("DEBUG")
-PORT = get_int("PORT")
+PORT = get_int("PORT", default=8080)
+WORKERS = get_int("WORKERS", default=4)
 OTRO = get("API_KEY", secret_name="otro-secreto")
 ```
 
-- `get(key, secret_name=None)` devuelve el campo como texto. Sin `secret_name` usa `VAULT_SECRET_NAME`.
+- `get(key, secret_name=None, *, default)` devuelve el campo como texto. Sin `secret_name` usa `VAULT_SECRET_NAME`.
 - `get_bool` y `get_int` convierten el valor. El texto `"false"` es verdadero en Python, por eso existe `get_bool`.
+- `default` se usa solo cuando la clave no está en el secreto. Si está, gana el valor de Vault.
 - `reload()` descarta la caché y el token; la próxima lectura vuelve a Vault.
 
-Si falta un puntero o una clave, se lanza `VaultConfigError`. El mensaje nombra lo que falta y no incluye valores ni el token.
+Si falta un puntero o una clave sin `default`, se lanza `VaultConfigError`. El mensaje nombra lo que falta y no incluye valores ni el token.
 
 ## Punteros
 
@@ -46,7 +48,7 @@ Si falta un puntero o una clave, se lanza `VaultConfigError`. El mensaje nombra 
 | `VAULT_KV_MOUNT` | No | `secret` |
 | `VAULT_AUTH_TOKEN_PATH` | No | `/var/run/secrets/kubernetes.io/serviceaccount` |
 
-La librería hace login con el JWT del service account y lee KV v2 en `{mount}/data/{namespace}/{secret_name}`. Hay un login y una lectura por secreto durante la vida del proceso. Si Vault responde 403, hace login de nuevo y reintenta una vez. Cada llamada tiene un timeout de 5 segundos. No hay valores por defecto de configuración ni respaldo a otras variables de entorno.
+La librería hace login con el JWT del service account y lee KV v2 en `{mount}/data/{namespace}/{secret_name}`. Hay un login y una lectura por secreto durante la vida del proceso. Si Vault responde 403, hace login de nuevo y reintenta una vez. Cada llamada tiene un timeout de 5 segundos. No hay respaldo a otras variables de entorno: una clave ausente falla, salvo que la llamada pase `default`.
 
 ## Pruebas
 
